@@ -20,7 +20,7 @@ def get_model(map_type: str) -> (BaseModel, TestOptions):
         "--dataroot", "../../texgen/datasets",
         "--name", "texgen_p2p_Albedo",
         "--model", "pix2pix",
-        "--checkpoints_dir", "../../texgen/checkpoints",
+        "--checkpoints_dir", "checkpoints",
         "--batch_size", "2",
         "--load_size", "1024",
         "--crop_size", "1024",
