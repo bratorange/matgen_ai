@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing App</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+
+</head>
+<body>
+<div class="container">
+    <h1>Image Processing App</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="uploadImage()">Upload</button>
+    <div id="status"></div>
+    <div id="result"></div>
+    <div id="preview-container">
+        <canvas id="preview-canvas"></canvas>
+        <div id="texture-controls"></div>
+    </div>
+
+</div>
+<div id="overlay" class="overlay">
+    <div class="overlay-content">
+        <h2 id="overlay-status"></h2>
+        <div id="progress-bar" class="progress-bar">
+            <div id="progress" class="progress"></div>
+        </div>
+        <button id="cancel-button" onclick="cancelJob()">Cancel</button>
+    </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>

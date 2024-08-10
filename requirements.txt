@@ -1,1 +1,11 @@
 file:./pix2pix
+onnx
+PyQt5
+numpy
+Pillow
+pyopengl
+onnxruntime
+tqdm
+flask
+flask_cors
+matplotlib
