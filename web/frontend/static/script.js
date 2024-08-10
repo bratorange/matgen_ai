@@ -6,25 +6,25 @@ let isDragging = false;
 
 function initThreeJS() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
 
-    camera = new THREE.PerspectiveCamera(75, 4/6, 0.1, 50);
+    camera = new THREE.PerspectiveCamera(75, 1, 0.1, 50);
     camera.position.z = 2;
 
     renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('preview-canvas'), antialias: true });
-    renderer.setSize(400, 600);
+    renderer.setSize(600, 600);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
     // Create a subdivided cube geometry
     const geometry = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
-    const material = new THREE.MeshPhongMaterial({
-        color: 0x156289,
+    const material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
-        flatShading: true
+        displacementScale: 0.1
     });
     cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
-    // Lights
     const lights = [];
     lights[0] = new THREE.DirectionalLight(0xffffff, 3);
     lights[1] = new THREE.DirectionalLight(0xffffff, 3);
@@ -47,8 +47,6 @@ function initThreeJS() {
     controls.enableZoom = false; // Disable zooming
 
     animate();
-
-    window.addEventListener('resize', onWindowResize, false);
 }
 
 function animate() {
@@ -169,42 +167,19 @@ function cancelJob() {
 }
 
 function displayResults(results) {
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '';
+    updatePreview(results);
 
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.bottom = '10px';
-    container.style.left = '10px';
-    container.style.display = 'flex';
-    container.style.flexWrap = 'wrap';
-    container.style.justifyContent = 'flex-start';
-    container.style.maxWidth = '380px'; // Adjust based on your preview size
+    const textureControls = document.getElementById('texture-controls');
+    const texturePreviews = textureControls.getElementsByClassName('texture-preview');
 
     for (const [mapType, imageData] of Object.entries(results)) {
-        const imgContainer = document.createElement('div');
-        imgContainer.className = 'texture-container';
-
-        const img = document.createElement('img');
-        img.src = `data:image/png;base64,${imageData}`;
-        img.alt = `${mapType} Map`;
-        img.className = 'texture-preview';
-        img.dataset.type = mapType;
-        img.addEventListener('click', toggleTexture);
-
-        const label = document.createElement('p');
-        label.textContent = `${mapType}`;
-        label.style.fontSize = '12px';
-        label.style.margin = '2px 0';
-
-        imgContainer.appendChild(img);
-        imgContainer.appendChild(label);
-        container.appendChild(imgContainer);
+        const img = textureControls.querySelector(`[data-type="${mapType}"]`);
+        if (img) {
+            img.src = `data:image/png;base64,${imageData}`;
+            img.classList.remove('placeholder');
+            img.classList.add('active');
+        }
     }
-
-    resultDiv.appendChild(container);
-
-    updatePreview(results);
 }
 
 function applyTextures() {
@@ -219,7 +194,30 @@ function applyTextures() {
 
     cube.material.needsUpdate = true;
 }
+function initTexturePreviews() {
+    const textureControls = document.getElementById('texture-controls');
+    const mapTypes = ["Albedo", "Normal", "Height", "Roughness", "Metallic"];
 
+    mapTypes.forEach(mapType => {
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'texture-container';
+
+        const img = document.createElement('img');
+        img.alt = `${mapType} Map`;
+        img.className = 'texture-preview placeholder';
+        img.dataset.type = mapType;
+        img.addEventListener('click', toggleTexture);
+
+        const label = document.createElement('p');
+        label.textContent = mapType;
+        label.style.fontSize = '12px';
+        label.style.margin = '2px 0';
+
+        imgContainer.appendChild(img);
+        imgContainer.appendChild(label);
+        textureControls.appendChild(imgContainer);
+    });
+}
 function toggleTexture(event) {
     const img = event.target;
     const mapType = img.dataset.type;
@@ -252,4 +250,7 @@ window.addEventListener('beforeunload', function (e) {
     }
 });
 
-initThreeJS();
+document.addEventListener('DOMContentLoaded', function() {
+    initThreeJS();
+    initTexturePreviews();
+});

@@ -62,7 +62,7 @@ button {
 }
 
 #preview-container {
-    width: 400px;
+    width: 600px;
     height: 600px;
     margin-top: 20px;
     position: relative;
@@ -89,10 +89,19 @@ button {
     width: 60px;
     height: 60px;
     object-fit: cover;
-    cursor: pointer;
-    border: 3px solid darkorange;
+    border: 3px solid #ccc;
     transition: border-color 0.3s ease;
     margin: 5px;
+}
+
+.texture-preview.placeholder {
+    background-color: #f0f0f0;
+    cursor: default;
+}
+
+.texture-preview.active {
+    cursor: pointer;
+    border-color: darkorange;
 }
 
 .texture-preview.disabled {

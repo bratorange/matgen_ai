@@ -72,7 +72,6 @@ def index():
 def serve_css():
     return send_from_directory(app.static_folder, 'styles.css')
 
-
 @app.route('/script.js')
 def serve_js():
     return send_from_directory(app.static_folder, 'script.js')
