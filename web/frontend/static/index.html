@@ -8,20 +8,29 @@
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="script.js"></script>
-
 </head>
 <body>
 <div class="container">
-    <h1>Image Processing App</h1>
-    <input type="file" id="imageInput" accept="image/*">
-    <button onclick="uploadImage()">Upload</button>
-    <div id="status"></div>
-    <div id="result"></div>
-    <div id="preview-container">
-        <canvas id="preview-canvas"></canvas>
-        <div id="texture-controls"></div>
+    <div class="left-column">
+        <div id="upload-area">
+            <img id="uploaded-image" style="display: none; max-width: 100%; max-height: 100%;">
+            <div id="drag-drop-area">
+                <input type="file" id="imageInput" accept="image/*">
+                <label for="imageInput" id="upload-label">Drag & Drop or Click to Upload</label>
+            </div>
+        </div>
+        <button id="upload-button" onclick="uploadImage()">Upload</button>
+    </div>
+    <div class="right-column">
+        <div id="preview-container">
+            <canvas id="preview-canvas"></canvas>
+        </div>
+        <div id="texture-controls-container">
+            <div id="texture-controls"></div>
+        </div>
     </div>
 </div>
+
 <div id="overlay" class="overlay">
     <div class="overlay-content">
         <h2 id="overlay-status"></h2>

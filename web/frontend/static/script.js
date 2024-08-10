@@ -1,11 +1,15 @@
 let currentJobId = null;
-let scene, camera, renderer, cube, controls;
+let scene, camera, renderer, cube;
 let textures = {};
 let isDragging = false;
-
+let previousMousePosition = {
+    x: 0,
+    y: 0
+};
 
 function initThreeJS() {
     scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
 
     camera = new THREE.PerspectiveCamera(75, 1, 0.1, 50);
     camera.position.z = 2;
@@ -16,19 +20,16 @@ function initThreeJS() {
     renderer.toneMappingExposure = 1;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
-    // Create a subdivided cube geometry
-    const geometry = new THREE.BoxGeometry(1, 1, 1, 128, 128, 128);
-    const material = new THREE.MeshStandardMaterial({
+const geometry = new THREE.SphereGeometry(1, 128, 64);    const material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
-        displacementScale: 0.1
     });
     cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
 
     const lights = [];
-    lights[0] = new THREE.DirectionalLight(0xffffff, 3);
-    lights[1] = new THREE.DirectionalLight(0xffffff, 3);
-    lights[2] = new THREE.DirectionalLight(0xffffff, 3);
+    lights[0] = new THREE.DirectionalLight(0xffffff, .5);
+    lights[1] = new THREE.DirectionalLight(0xffffff, 1);
+    lights[2] = new THREE.DirectionalLight(0xffffff, 1);
 
     lights[0].position.set(0, 200, 0);
     lights[1].position.set(100, 200, 100);
@@ -38,27 +39,48 @@ function initThreeJS() {
     scene.add(lights[1]);
     scene.add(lights[2]);
 
-    // Add OrbitControls
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.25;
-    controls.screenSpacePanning = false;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.enableZoom = false; // Disable zooming
-
     animate();
+
+    // Add event listeners for mouse interaction
+    renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+    renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+    renderer.domElement.addEventListener('mouseup', onMouseUp, false);
 }
 
 function animate() {
     requestAnimationFrame(animate);
-
-    controls.update();
     renderer.render(scene, camera);
 }
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+
+function onMouseDown(event) {
+    isDragging = true;
+    previousMousePosition = {
+        x: event.clientX,
+        y: event.clientY
+    };
+}
+
+function onMouseUp(event) {
+    isDragging = false;
+}
+
+function onMouseMove(event) {
+    if (!isDragging) return;
+
+    const deltaMove = {
+        x: event.clientX - previousMousePosition.x,
+        y: event.clientY - previousMousePosition.y
+    };
+
+    const rotationSpeed = 0.005;
+
+    cube.rotation.y += deltaMove.x * rotationSpeed;
+    cube.rotation.x += deltaMove.y * rotationSpeed;
+
+    previousMousePosition = {
+        x: event.clientX,
+        y: event.clientY
+    };
 }
 
 function updatePreview(results) {
@@ -72,21 +94,52 @@ function updatePreview(results) {
     applyTextures();
 }
 
-function onMouseDown(event) {
-    isDragging = true;
-    controls.enabled = true;
+function initUploadArea() {
+    const uploadArea = document.getElementById('upload-area');
+    const imageInput = document.getElementById('imageInput');
+    const uploadedImage = document.getElementById('uploaded-image');
+    const dragDropArea = document.getElementById('drag-drop-area');
+    const uploadLabel = document.getElementById('upload-label');
+
+    if (!uploadArea || !imageInput || !uploadedImage || !dragDropArea || !uploadLabel) {
+        console.error('One or more required elements are missing');
+        return;
+    }
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#000';
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#ccc';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#ccc';
+        imageInput.files = e.dataTransfer.files;
+        handleFileSelect({ target: imageInput });
+    });
+
+    imageInput.addEventListener('change', handleFileSelect);
 }
 
-function onMouseUp(event) {
-    isDragging = false;
-    controls.enabled = false;
-}
-
-function onMouseMove(event) {
-    if (isDragging) {
-        controls.update();
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const uploadedImage = document.getElementById('uploaded-image');
+            const dragDropArea = document.getElementById('drag-drop-area');
+            uploadedImage.src = e.target.result;
+            uploadedImage.style.display = 'block';
+            dragDropArea.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
     }
 }
+
 
 function uploadImage() {
     const input = document.getElementById('imageInput');
@@ -113,6 +166,13 @@ function uploadImage() {
         console.error('Error:', error);
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    initThreeJS();
+    initTexturePreviews();
+    initUploadArea();
+});
+
 
 function checkStatus(jobId) {
     fetch(`/api/status/${jobId}`)
@@ -194,10 +254,12 @@ function applyTextures() {
 
     cube.material.needsUpdate = true;
 }
+
 function initTexturePreviews() {
     const textureControls = document.getElementById('texture-controls');
     const mapTypes = ["Albedo", "Normal", "Height", "Roughness", "Metallic"];
 
+    console.log(mapTypes);
     mapTypes.forEach(mapType => {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'texture-container';
@@ -218,6 +280,7 @@ function initTexturePreviews() {
         textureControls.appendChild(imgContainer);
     });
 }
+
 function toggleTexture(event) {
     const img = event.target;
     const mapType = img.dataset.type;
@@ -248,9 +311,4 @@ window.addEventListener('beforeunload', function (e) {
     if (currentJobId) {
         cancelJob();
     }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    initThreeJS();
-    initTexturePreviews();
 });
