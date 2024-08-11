@@ -19,8 +19,9 @@ job_results = {}
 job_lock = Lock()
 job_progress = {}
 
-MAX_QUEUE_SIZE = 0
+MAX_QUEUE_SIZE = 50
 JOB_TIMEOUT = 120  # seconds
+
 
 def get_model(map_type: str):
     sys.argv = [
@@ -46,6 +47,7 @@ def get_model(map_type: str):
     model.setup(opt)
     return model, opt
 
+
 def infere(model: BaseModel, opt: TestOptions, src_im):
     A = src_im
     transform_params = get_params(opt, A.size)
@@ -66,17 +68,21 @@ def infere(model: BaseModel, opt: TestOptions, src_im):
     im = util.tensor2im(list(items)[1][1])
     return im
 
+
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
+
 
 @app.route('/styles.css')
 def serve_css():
     return send_from_directory(app.static_folder, 'styles.css')
 
+
 @app.route('/script.js')
 def serve_js():
     return send_from_directory(app.static_folder, 'script.js')
+
 
 def cleanup_job(job_id):
     with job_lock:
@@ -84,6 +90,7 @@ def cleanup_job(job_id):
             del job_results[job_id]
         if job_id in job_progress:
             del job_progress[job_id]
+
 
 def inference_worker():
     while True:
@@ -113,6 +120,7 @@ def inference_worker():
         # Set a timer to clean up the job after timeout
         Timer(JOB_TIMEOUT, cleanup_job, args=[job_id]).start()
 
+
 @app.route('/api/upload', methods=['POST'])
 def upload_image():
     if job_queue.qsize() >= MAX_QUEUE_SIZE:
@@ -132,6 +140,7 @@ def upload_image():
 
     return jsonify({"job_id": job_id}), 202
 
+
 @app.route('/api/status/<job_id>', methods=['GET'])
 def get_job_status(job_id):
     with job_lock:
@@ -142,11 +151,13 @@ def get_job_status(job_id):
         elif job_id in job_progress:
             return jsonify({"status": "processing", "progress": job_progress[job_id]}), 200
 
-    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(job_queue.queue)] else -1
+    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(
+        job_queue.queue)] else -1
     if queue_position != -1:
         return jsonify({"status": "waiting", "queue_position": queue_position}), 200
 
     return jsonify({"status": "not found"}), 404
+
 
 @app.route('/api/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
@@ -160,6 +171,7 @@ def cancel_job(job_id):
     job_queue.queue = queue.Queue([job for job in list(job_queue.queue) if job[0] != job_id])
 
     return jsonify({"status": "cancelled"}), 200
+
 
 if __name__ == '__main__':
     # Load all models

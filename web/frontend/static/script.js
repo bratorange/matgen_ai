@@ -20,7 +20,8 @@ function initThreeJS() {
     renderer.toneMappingExposure = 1;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
-const geometry = new THREE.SphereGeometry(1, 128, 64);    const material = new THREE.MeshStandardMaterial({
+    const geometry = new THREE.SphereGeometry(1, 128, 64);
+    const material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
     });
     cube = new THREE.Mesh(geometry, material);
@@ -41,7 +42,6 @@ const geometry = new THREE.SphereGeometry(1, 128, 64);    const material = new T
 
     animate();
 
-    // Add event listeners for mouse interaction
     renderer.domElement.addEventListener('mousedown', onMouseDown, false);
     renderer.domElement.addEventListener('mousemove', onMouseMove, false);
     renderer.domElement.addEventListener('mouseup', onMouseUp, false);
@@ -102,7 +102,6 @@ function initUploadArea() {
     const uploadLabel = document.getElementById('upload-label');
     const clearButton = document.getElementById('clear-image');
 
-    // Check if there's a cached image
     const cachedImageSrc = localStorage.getItem('cachedImage');
     if (cachedImageSrc) {
         uploadedImage.src = cachedImageSrc;
@@ -118,7 +117,6 @@ function initUploadArea() {
     });
 
     uploadArea.addEventListener('dragleave', () => {
-        // unset the border color
         uploadArea.style.removeProperty('border-color');
     });
 
@@ -130,7 +128,6 @@ function initUploadArea() {
     });
 
     imageInput.addEventListener('change', handleFileSelect);
-
     clearButton.addEventListener('click', clearImage);
 }
 
@@ -149,11 +146,11 @@ function handleFileSelect(event) {
             clearButton.style.display = 'block';
             deactivateUploadAreaBorder();
 
-            // Cache the image
             localStorage.setItem('cachedImage', e.target.result);
         };
         reader.readAsDataURL(file);
     }
+    updateButtonStates();
 }
 
 function clearImage() {
@@ -168,10 +165,10 @@ function clearImage() {
     clearButton.style.display = 'none';
     imageInput.value = '';
 
-    // Clear cached image
     localStorage.removeItem('cachedImage');
 
-    activateUploadAreaBorder();  // Change this line
+    activateUploadAreaBorder();
+    updateButtonStates();
 }
 
 function activateUploadAreaBorder() {
@@ -182,6 +179,28 @@ function activateUploadAreaBorder() {
 function deactivateUploadAreaBorder() {
     const uploadArea = document.getElementById('upload-area');
     uploadArea.classList.add('has-image');
+}
+
+function updateButtonStates() {
+    const uploadButton = document.getElementById('upload-button');
+    const saveTexturesButton = document.getElementById('save-textures-button');
+    const imageInput = document.getElementById('imageInput');
+
+    uploadButton.disabled = !imageInput.files.length;
+    saveTexturesButton.disabled = !Object.keys(textures).length;
+
+    updateButtonStyle(uploadButton);
+    updateButtonStyle(saveTexturesButton);
+}
+
+function updateButtonStyle(button) {
+    if (button.disabled) {
+        button.style.opacity = '0.5';
+        button.style.cursor = 'not-allowed';
+    } else {
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+    }
 }
 
 function uploadImage() {
@@ -201,12 +220,17 @@ function uploadImage() {
     })
     .then(response => response.json())
     .then(data => {
+        if(data.error) {
+            alert(data.error);
+            return;
+        }
         currentJobId = data.job_id;
         showOverlay();
         checkStatus(data.job_id);
     })
     .catch(error => {
         console.error('Error:', error);
+        alert('An error occurred while uploading the image.');
     });
 }
 
@@ -224,6 +248,7 @@ function checkStatus(jobId) {
     })
     .catch(error => {
         console.error('Error:', error);
+        alert('An error occurred while checking the job status.');
     });
 }
 
@@ -258,16 +283,18 @@ function cancelJob() {
         })
         .catch(error => {
             console.error('Error:', error);
+            alert('An error occurred while canceling the job.');
         });
     }
 }
+
 function saveTextures() {
     if (!Object.keys(textures).length) {
         alert('No textures to save. Please upload and process an image first.');
         return;
     }
 
-    showOverlay(); // Show the overlay
+    showOverlay();
     document.getElementById('overlay-status').textContent = 'Preparing textures for download...';
     document.getElementById('progress').style.width = '0%';
 
@@ -293,20 +320,18 @@ function saveTextures() {
 
     zip.generateAsync({type:"blob"})
     .then(function(content) {
-        hideOverlay(); // Hide the overlay when done
+        hideOverlay();
         const link = document.createElement('a');
         link.href = URL.createObjectURL(content);
         link.download = 'textures.zip';
         link.click();
     })
     .catch(function(error) {
-        hideOverlay(); // Hide the overlay if an error occurs
+        hideOverlay();
         console.error('Error generating zip file:', error);
         alert('An error occurred while preparing the textures for download.');
     });
 }
-
-
 
 function displayResults(results) {
     updatePreview(results);
@@ -322,6 +347,8 @@ function displayResults(results) {
             img.classList.add('active');
         }
     }
+
+    updateButtonStates();
 }
 
 function applyTextures() {
@@ -397,4 +424,5 @@ document.addEventListener('DOMContentLoaded', function() {
     initThreeJS();
     initTexturePreviews();
     initUploadArea();
+    updateButtonStates();
 });
