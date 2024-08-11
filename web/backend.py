@@ -3,7 +3,7 @@ import io
 import queue
 import sys
 import uuid
-from threading import Thread, Lock
+from threading import Thread, Lock, Timer
 
 from PIL import Image
 from data.base_dataset import get_params, get_transform
@@ -18,6 +18,9 @@ job_queue = queue.Queue()
 job_results = {}
 job_lock = Lock()
 job_progress = {}
+
+MAX_QUEUE_SIZE = 0
+JOB_TIMEOUT = 120  # seconds
 
 def get_model(map_type: str):
     sys.argv = [
@@ -42,7 +45,6 @@ def get_model(map_type: str):
     model = create_model(opt)
     model.setup(opt)
     return model, opt
-
 
 def infere(model: BaseModel, opt: TestOptions, src_im):
     A = src_im
@@ -76,6 +78,13 @@ def serve_css():
 def serve_js():
     return send_from_directory(app.static_folder, 'script.js')
 
+def cleanup_job(job_id):
+    with job_lock:
+        if job_id in job_results:
+            del job_results[job_id]
+        if job_id in job_progress:
+            del job_progress[job_id]
+
 def inference_worker():
     while True:
         job_id, image = job_queue.get()
@@ -101,10 +110,14 @@ def inference_worker():
 
         job_queue.task_done()
 
+        # Set a timer to clean up the job after timeout
+        Timer(JOB_TIMEOUT, cleanup_job, args=[job_id]).start()
 
-# Modify the upload_image function
 @app.route('/api/upload', methods=['POST'])
 def upload_image():
+    if job_queue.qsize() >= MAX_QUEUE_SIZE:
+        return jsonify({"error": "Server is too busy. Please try again later."}), 503
+
     if 'image' not in request.files:
         return jsonify({"error": "No image provided"}), 400
 
@@ -119,26 +132,22 @@ def upload_image():
 
     return jsonify({"job_id": job_id}), 202
 
-
-# Modify the get_job_status function
 @app.route('/api/status/<job_id>', methods=['GET'])
 def get_job_status(job_id):
     with job_lock:
         if job_id in job_results:
             progress = job_progress.pop(job_id, 100)
-            return jsonify({"status": "completed", "progress": progress, "result": job_results[job_id]}), 200
+            result = job_results.pop(job_id)  # Remove the result after sending
+            return jsonify({"status": "completed", "progress": progress, "result": result}), 200
         elif job_id in job_progress:
             return jsonify({"status": "processing", "progress": job_progress[job_id]}), 200
 
-    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(
-        job_queue.queue)] else -1
+    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(job_queue.queue)] else -1
     if queue_position != -1:
         return jsonify({"status": "waiting", "queue_position": queue_position}), 200
 
     return jsonify({"status": "not found"}), 404
 
-
-# Add a new route to cancel a job
 @app.route('/api/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
     with job_lock:
@@ -151,7 +160,6 @@ def cancel_job(job_id):
     job_queue.queue = queue.Queue([job for job in list(job_queue.queue) if job[0] != job_id])
 
     return jsonify({"status": "cancelled"}), 200
-
 
 if __name__ == '__main__':
     # Load all models

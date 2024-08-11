@@ -109,21 +109,22 @@ function initUploadArea() {
         uploadedImage.style.display = 'block';
         dragDropArea.style.display = 'none';
         clearButton.style.display = 'block';
-        toggleUploadAreaBorder();
+        deactivateUploadAreaBorder();
     }
 
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
-        uploadArea.style.borderColor = '#000';
+        uploadArea.style.borderColor = '#0063c1';
     });
 
     uploadArea.addEventListener('dragleave', () => {
-        uploadArea.style.borderColor = '#ccc';
+        // unset the border color
+        uploadArea.style.removeProperty('border-color');
     });
 
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
-        uploadArea.style.borderColor = '#ccc';
+        uploadArea.style.removeProperty('border-color');
         imageInput.files = e.dataTransfer.files;
         handleFileSelect({ target: imageInput });
     });
@@ -146,11 +147,10 @@ function handleFileSelect(event) {
             uploadedImage.style.display = 'block';
             dragDropArea.style.display = 'none';
             clearButton.style.display = 'block';
+            deactivateUploadAreaBorder();
 
             // Cache the image
             localStorage.setItem('cachedImage', e.target.result);
-
-            toggleUploadAreaBorder();
         };
         reader.readAsDataURL(file);
     }
@@ -171,19 +171,17 @@ function clearImage() {
     // Clear cached image
     localStorage.removeItem('cachedImage');
 
-    toggleUploadAreaBorder();
+    activateUploadAreaBorder();  // Change this line
 }
 
-
-function toggleUploadAreaBorder() {
+function activateUploadAreaBorder() {
     const uploadArea = document.getElementById('upload-area');
-    const uploadedImage = document.getElementById('uploaded-image');
+    uploadArea.classList.remove('has-image');
+}
 
-    if (uploadedImage.style.display === 'block') {
-        uploadArea.classList.add('has-image');
-    } else {
-        uploadArea.classList.remove('has-image');
-    }
+function deactivateUploadAreaBorder() {
+    const uploadArea = document.getElementById('upload-area');
+    uploadArea.classList.add('has-image');
 }
 
 function uploadImage() {
@@ -269,7 +267,14 @@ function saveTextures() {
         return;
     }
 
+    showOverlay(); // Show the overlay
+    document.getElementById('overlay-status').textContent = 'Preparing textures for download...';
+    document.getElementById('progress').style.width = '0%';
+
     const zip = new JSZip();
+
+    let processedTextures = 0;
+    const totalTextures = Object.keys(textures).length;
 
     for (const [mapType, texture] of Object.entries(textures)) {
         const canvas = document.createElement('canvas');
@@ -280,16 +285,27 @@ function saveTextures() {
 
         const imageData = canvas.toDataURL('image/png').split(',')[1];
         zip.file(`${mapType}.png`, imageData, {base64: true});
+
+        processedTextures++;
+        const progress = (processedTextures / totalTextures) * 100;
+        document.getElementById('progress').style.width = `${progress}%`;
     }
 
     zip.generateAsync({type:"blob"})
     .then(function(content) {
+        hideOverlay(); // Hide the overlay when done
         const link = document.createElement('a');
         link.href = URL.createObjectURL(content);
         link.download = 'textures.zip';
         link.click();
+    })
+    .catch(function(error) {
+        hideOverlay(); // Hide the overlay if an error occurs
+        console.error('Error generating zip file:', error);
+        alert('An error occurred while preparing the textures for download.');
     });
 }
+
 
 
 function displayResults(results) {
