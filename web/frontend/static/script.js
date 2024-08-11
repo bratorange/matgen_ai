@@ -214,7 +214,7 @@ function uploadImage() {
     const formData = new FormData();
     formData.append('image', file);
 
-    fetch('/api/upload', {
+    fetch('/matgen-ai/api/upload', {
         method: 'POST',
         body: formData
     })
@@ -235,7 +235,7 @@ function uploadImage() {
 }
 
 function checkStatus(jobId) {
-    fetch(`/api/status/${jobId}`)
+    fetch(`/matgen-ai/api/status/${jobId}`)
     .then(response => response.json())
     .then(data => {
         updateOverlay(data);
@@ -275,7 +275,7 @@ function hideOverlay() {
 
 function cancelJob() {
     if (currentJobId) {
-        fetch(`/api/cancel/${currentJobId}`, { method: 'POST' })
+        fetch(`/matgen-ai/api/cancel/${currentJobId}`, { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             hideOverlay();

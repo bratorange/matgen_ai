@@ -36,7 +36,7 @@ else:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='frontend/static', static_url_path='')
+app = Flask(__name__, static_folder='frontend/static', static_url_path='/matgen-ai')
 
 job_queue = queue.Queue()
 job_results = {}
@@ -101,15 +101,15 @@ def infere(model: BaseModel, opt: TestOptions, src_im):
     im = util.tensor2im(list(items)[1][1])
     return im
 
-@app.route('/')
+@app.route('/matgen-ai/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/styles.css')
+@app.route('/matgen-ai/styles.css')
 def serve_css():
     return send_from_directory(app.static_folder, 'styles.css')
 
-@app.route('/script.js')
+@app.route('/matgen-ai/script.js')
 def serve_js():
     return send_from_directory(app.static_folder, 'script.js')
 
@@ -154,7 +154,7 @@ def inference_worker():
         # Set a timer to clean up the job after timeout
         Timer(JOB_TIMEOUT, cleanup_job, args=[job_id]).start()
 
-@app.route('/api/upload', methods=['POST'])
+@app.route('/matgen-ai/api/upload', methods=['POST'])
 def upload_image():
     if job_queue.qsize() >= MAX_QUEUE_SIZE:
         logger.warning(f"Job queue full. Current size: {job_queue.qsize()}")
@@ -175,7 +175,7 @@ def upload_image():
 
     return jsonify({"job_id": job_id}), 202
 
-@app.route('/api/status/<job_id>', methods=['GET'])
+@app.route('/matgen-ai/api/status/<job_id>', methods=['GET'])
 def get_job_status(job_id):
     with job_lock:
         if job_id in job_results:
@@ -194,7 +194,7 @@ def get_job_status(job_id):
     logger.warning(f"Job {job_id} not found")
     return jsonify({"status": "not found"}), 404
 
-@app.route('/api/cancel/<job_id>', methods=['POST'])
+@app.route('/matgen-ai/api/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
     with job_lock:
         if job_id in job_progress:
