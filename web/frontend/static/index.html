@@ -7,20 +7,25 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="script.js"></script>
 </head>
 <body>
 <div class="container">
     <div class="left-column">
+        <h1>MatGen AI</h1>
         <div id="upload-area">
-            <img id="uploaded-image" style="display: none; max-width: 100%; max-height: 100%;">
+            <img id="uploaded-image" style="display: none; width: 100%; height: 100%; object-fit: cover;">
             <div id="drag-drop-area">
                 <input type="file" id="imageInput" accept="image/*">
                 <label for="imageInput" id="upload-label">Drag & Drop or Click to Upload</label>
             </div>
+            <button id="clear-image" style="display: none;">×</button>
         </div>
         <button id="upload-button" onclick="uploadImage()">Upload</button>
+        <button id="save-textures-button" onclick="saveTextures()">Save Textures</button>
     </div>
+    <div class="divider"></div>
     <div class="right-column">
         <div id="preview-container">
             <canvas id="preview-canvas"></canvas>

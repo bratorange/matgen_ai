@@ -15,7 +15,7 @@ function initThreeJS() {
     camera.position.z = 2;
 
     renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('preview-canvas'), antialias: true });
-    renderer.setSize(600, 600);
+    renderer.setSize(400, 400);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -100,10 +100,16 @@ function initUploadArea() {
     const uploadedImage = document.getElementById('uploaded-image');
     const dragDropArea = document.getElementById('drag-drop-area');
     const uploadLabel = document.getElementById('upload-label');
+    const clearButton = document.getElementById('clear-image');
 
-    if (!uploadArea || !imageInput || !uploadedImage || !dragDropArea || !uploadLabel) {
-        console.error('One or more required elements are missing');
-        return;
+    // Check if there's a cached image
+    const cachedImageSrc = localStorage.getItem('cachedImage');
+    if (cachedImageSrc) {
+        uploadedImage.src = cachedImageSrc;
+        uploadedImage.style.display = 'block';
+        dragDropArea.style.display = 'none';
+        clearButton.style.display = 'block';
+        toggleUploadAreaBorder();
     }
 
     uploadArea.addEventListener('dragover', (e) => {
@@ -123,6 +129,8 @@ function initUploadArea() {
     });
 
     imageInput.addEventListener('change', handleFileSelect);
+
+    clearButton.addEventListener('click', clearImage);
 }
 
 function handleFileSelect(event) {
@@ -132,14 +140,51 @@ function handleFileSelect(event) {
         reader.onload = function(e) {
             const uploadedImage = document.getElementById('uploaded-image');
             const dragDropArea = document.getElementById('drag-drop-area');
+            const clearButton = document.getElementById('clear-image');
+
             uploadedImage.src = e.target.result;
             uploadedImage.style.display = 'block';
             dragDropArea.style.display = 'none';
+            clearButton.style.display = 'block';
+
+            // Cache the image
+            localStorage.setItem('cachedImage', e.target.result);
+
+            toggleUploadAreaBorder();
         };
         reader.readAsDataURL(file);
     }
 }
 
+function clearImage() {
+    const uploadedImage = document.getElementById('uploaded-image');
+    const dragDropArea = document.getElementById('drag-drop-area');
+    const clearButton = document.getElementById('clear-image');
+    const imageInput = document.getElementById('imageInput');
+
+    uploadedImage.src = '';
+    uploadedImage.style.display = 'none';
+    dragDropArea.style.display = 'block';
+    clearButton.style.display = 'none';
+    imageInput.value = '';
+
+    // Clear cached image
+    localStorage.removeItem('cachedImage');
+
+    toggleUploadAreaBorder();
+}
+
+
+function toggleUploadAreaBorder() {
+    const uploadArea = document.getElementById('upload-area');
+    const uploadedImage = document.getElementById('uploaded-image');
+
+    if (uploadedImage.style.display === 'block') {
+        uploadArea.classList.add('has-image');
+    } else {
+        uploadArea.classList.remove('has-image');
+    }
+}
 
 function uploadImage() {
     const input = document.getElementById('imageInput');
@@ -166,13 +211,6 @@ function uploadImage() {
         console.error('Error:', error);
     });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    initThreeJS();
-    initTexturePreviews();
-    initUploadArea();
-});
-
 
 function checkStatus(jobId) {
     fetch(`/api/status/${jobId}`)
@@ -225,6 +263,34 @@ function cancelJob() {
         });
     }
 }
+function saveTextures() {
+    if (!Object.keys(textures).length) {
+        alert('No textures to save. Please upload and process an image first.');
+        return;
+    }
+
+    const zip = new JSZip();
+
+    for (const [mapType, texture] of Object.entries(textures)) {
+        const canvas = document.createElement('canvas');
+        canvas.width = texture.image.width;
+        canvas.height = texture.image.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(texture.image, 0, 0);
+
+        const imageData = canvas.toDataURL('image/png').split(',')[1];
+        zip.file(`${mapType}.png`, imageData, {base64: true});
+    }
+
+    zip.generateAsync({type:"blob"})
+    .then(function(content) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = 'textures.zip';
+        link.click();
+    });
+}
+
 
 function displayResults(results) {
     updatePreview(results);
@@ -259,13 +325,11 @@ function initTexturePreviews() {
     const textureControls = document.getElementById('texture-controls');
     const mapTypes = ["Albedo", "Normal", "Height", "Roughness", "Metallic"];
 
-    console.log(mapTypes);
     mapTypes.forEach(mapType => {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'texture-container';
 
         const img = document.createElement('img');
-        img.alt = `${mapType} Map`;
         img.className = 'texture-preview placeholder';
         img.dataset.type = mapType;
         img.addEventListener('click', toggleTexture);
@@ -273,7 +337,7 @@ function initTexturePreviews() {
         const label = document.createElement('p');
         label.textContent = mapType;
         label.style.fontSize = '12px';
-        label.style.margin = '2px 0';
+        label.style.color = '#fff';
 
         imgContainer.appendChild(img);
         imgContainer.appendChild(label);
@@ -311,4 +375,10 @@ window.addEventListener('beforeunload', function (e) {
     if (currentJobId) {
         cancelJob();
     }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    initThreeJS();
+    initTexturePreviews();
+    initUploadArea();
 });
