@@ -42,8 +42,8 @@
             cp -r backend.py $out/
             cp -r frontend $out/
             echo "#!/bin/sh" > $out/bin/matgen-ai
-            echo "source $out/${pythonEnv}/bin/activate" >> $out/bin/matgen-ai
-            echo "exec $out/${pythonEnv}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
+            echo "source ${pythonEnv}/bin/activate" >> $out/bin/matgen-ai
+            echo "exec ${pythonEnv}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
             chmod +x $out/bin/matgen-ai
           '';
         };
