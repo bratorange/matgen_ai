@@ -46,6 +46,7 @@ job_progress = {}
 MAX_QUEUE_SIZE = 50
 JOB_TIMEOUT = 120  # seconds
 
+
 def update_stats():
     stats['total_images_inferred'] += 1
     current_time = datetime.now()
@@ -56,6 +57,7 @@ def update_stats():
 
     with open(STATS_FILE, 'w') as f:
         json.dump(stats, f, indent=2)
+
 
 def get_model(map_type: str):
     sys.argv = [
@@ -81,6 +83,7 @@ def get_model(map_type: str):
     model.setup(opt)
     return model, opt
 
+
 def infere(model: BaseModel, opt: TestOptions, src_im):
     A = src_im
     transform_params = get_params(opt, A.size)
@@ -101,17 +104,21 @@ def infere(model: BaseModel, opt: TestOptions, src_im):
     im = util.tensor2im(list(items)[1][1])
     return im
 
+
 @app.route('/matgen-ai/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
+
 
 @app.route('/matgen-ai/styles.css')
 def serve_css():
     return send_from_directory(app.static_folder, 'styles.css')
 
+
 @app.route('/matgen-ai/script.js')
 def serve_js():
     return send_from_directory(app.static_folder, 'script.js')
+
 
 def cleanup_job(job_id):
     with job_lock:
@@ -120,6 +127,7 @@ def cleanup_job(job_id):
         if job_id in job_progress:
             del job_progress[job_id]
     logger.info(f"Cleaned up job {job_id}")
+
 
 def inference_worker():
     while True:
@@ -154,6 +162,7 @@ def inference_worker():
         # Set a timer to clean up the job after timeout
         Timer(JOB_TIMEOUT, cleanup_job, args=[job_id]).start()
 
+
 @app.route('/matgen-ai/api/upload', methods=['POST'])
 def upload_image():
     if job_queue.qsize() >= MAX_QUEUE_SIZE:
@@ -175,6 +184,7 @@ def upload_image():
 
     return jsonify({"job_id": job_id}), 202
 
+
 @app.route('/matgen-ai/api/status/<job_id>', methods=['GET'])
 def get_job_status(job_id):
     with job_lock:
@@ -186,13 +196,15 @@ def get_job_status(job_id):
         elif job_id in job_progress:
             return jsonify({"status": "processing", "progress": job_progress[job_id]}), 200
 
-    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(job_queue.queue)] else -1
+    queue_position = [job[0] for job in list(job_queue.queue)].index(job_id) if job_id in [job[0] for job in list(
+        job_queue.queue)] else -1
     if queue_position != -1:
         logger.info(f"Job {job_id} waiting in queue at position {queue_position}")
         return jsonify({"status": "waiting", "queue_position": queue_position}), 200
 
     logger.warning(f"Job {job_id} not found")
     return jsonify({"status": "not found"}), 404
+
 
 @app.route('/matgen-ai/api/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
@@ -208,6 +220,7 @@ def cancel_job(job_id):
 
     return jsonify({"status": "cancelled"}), 200
 
+
 if __name__ == '__main__':
     # Load all models
     models = {}
@@ -218,7 +231,7 @@ if __name__ == '__main__':
 
     logger.info("Server started")
     try:
-        app.run(port=8000, debug=True)
+        app.run(port=8000, debug=False)
     finally:
         job_queue.put((None, None))
         inference_thread.join()
