@@ -10,47 +10,45 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        python = pkgs.python3;
         venvDir = "./.venv";
-        pythonEnv = pkgs.stdenv.mkDerivation {
-            src = ./.;
-            name = "matgen-ai-env";
-            buildInputs = [ python python.pkgs.pip ];
-            buildPhase = ''
-              python -m venv venv
-              source venv/bin/activate
-              pip install -r requirements.txt
-            '';
-            installPhase = ''
-              cp -r venv $out/
-            '';
-
+        pix2pix = pkgs.python3Packages.buildPythonPackage rec {
+            pname = "pix2pix";
+            version = "1.0";
+            src = ./pix2pix;
+            pyproject = true;
+            build-system = [ pkgs.python3Packages.setuptools ];
+            dependencies = with pkgs.python3Packages; [
+              torch
+              torchvision
+              # wandb
+            ];
         };
-      in
-      {
-        packages.default = pkgs.stdenv.mkDerivation {
+        pythonInterpreter = (pkgs.python3.withPackages (python-pkgs: [
+          python-pkgs.numpy
+          python-pkgs.pillow
+          python-pkgs.flask
+          python-pkgs.flask-cors
+          python-pkgs.waitress
+          pix2pix
+        ]));
+      in {
+        packages.default = pkgs.stdenv.mkDerivation rec {
           name = "matgen-ai";
           version = "1.0";
           src = ./.;
 
-          buildInputs = [
-            pythonEnv
-          ];
+          buildInputs = [  ];
 
           installPhase = ''
             mkdir -p $out/bin
             cp -r backend.py $out/
             cp -r frontend $out/
             echo "#!/bin/sh" > $out/bin/matgen-ai
-            echo "source ${pythonEnv}/bin/activate" >> $out/bin/matgen-ai
-            echo "exec ${pythonEnv}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
+            echo "exec ${pythonInterpreter}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
             chmod +x $out/bin/matgen-ai
           '';
         };
 
-        apps.default = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.default;
-        };
-      }
-    );
+        packages.debug = pix2pix;
+      });
 }

@@ -14,6 +14,7 @@ from util import util
 import os
 import json
 from datetime import datetime
+from waitress import serve
 
 STATS_FILE = '/var/lib/matgen_ai/stats.json'
 
@@ -226,7 +227,7 @@ if __name__ == '__main__':
 
     logger.info("Server started")
     try:
-        app.run(port=8000, debug=False)
+        serve(app, host="127.0.0.1", port=8000)
     finally:
         job_queue.append((None, None))
         inference_thread.join()

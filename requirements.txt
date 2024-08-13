@@ -3,3 +3,4 @@ numpy
 Pillow
 flask
 flask_cors
+waitress
