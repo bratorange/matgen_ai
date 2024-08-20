@@ -47,7 +47,7 @@
             mkdir -p $out/bin
             cp -r backend.py $out/
             cp -r frontend $out/
-            cp -r ${weights}/checkpoints $out/
+            cp -r ${weights}/ $out/checkpoints
             echo "#!/bin/sh" > $out/bin/matgen-ai
             echo "exec ${pythonInterpreter}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
             chmod +x $out/bin/matgen-ai
