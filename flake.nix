@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     weights = {
-      url = "https://example.com/path/to/weights.tar.gz";
+      url = "https://jsch.in/matgen-ai/weights.tar.gz";
       flake = false;
     };
   };
