@@ -4,6 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    weights = {
+      url = "https://example.com/path/to/weights.tar.gz";
+      flake = false;
+    };
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -43,7 +47,7 @@
             mkdir -p $out/bin
             cp -r backend.py $out/
             cp -r frontend $out/
-            cp -r checkpoints $out/
+            tar -xzf ${weights} -C $out/checkpoints
             echo "#!/bin/sh" > $out/bin/matgen-ai
             echo "exec ${pythonInterpreter}/bin/python $out/backend.py \"\$@\"" >> $out/bin/matgen-ai
             chmod +x $out/bin/matgen-ai
