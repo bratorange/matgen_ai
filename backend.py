@@ -3,6 +3,7 @@ import io
 import sys
 import uuid
 import logging
+from pathlib import Path
 from threading import Thread, Lock, Timer
 
 from PIL import Image
@@ -59,13 +60,20 @@ def update_stats():
     with open(STATS_FILE, 'w') as f:
         json.dump(stats, f, indent=2)
 
+
 def get_model(map_type: str):
+    # Get the directory of the current Python file
+    current_dir = Path(__file__).parent
+
+    # Set the checkpoints_dir relative to the current file
+    checkpoints_dir = current_dir / "checkpoints"
+
     sys.argv = [
         sys.argv[0],
         "--dataroot", "../../texgen/datasets",
         "--name", f"texgen_p2p_{map_type}",
         "--model", "pix2pix",
-        "--checkpoints_dir", "checkpoints",
+        "--checkpoints_dir", str(checkpoints_dir),
         "--batch_size", "2",
         "--load_size", "1024",
         "--crop_size", "1024",
