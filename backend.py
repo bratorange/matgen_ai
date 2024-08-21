@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
     logger.info("Server started")
     try:
-        serve(app, host="127.0.0.1", port=8000)
+        serve(app, host="127.0.0.1", port=8001)
     finally:
         job_queue.append((None, None))
         inference_thread.join()
